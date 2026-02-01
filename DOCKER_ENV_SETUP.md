@@ -26,7 +26,6 @@ nano .env
 ```env
 CB_API_KEY=your_api_key_here
 CB_API_SECRET=your_api_secret_base64_here
-CB_API_PASSPHRASE=your_passphrase_here
 
 ```
 
@@ -86,16 +85,9 @@ podman run --env-file .env \
 
 1. The API Secret will be shown once (Base64-encoded)
 2. Copy it immediately and paste into `.env` as `CB_API_SECRET`
-
 3. **Note**: The secret is only shown once, save it securely
 
-### Step 3: Set Passphrase
-
-1. You'll be prompted to create a passphrase
-2. Choose a strong passphrase and remember it
-3. Add to `.env` as `CB_API_PASSPHRASE`
-
-### Step 4: (Optional) IP Whitelist
+### Step 3: (Optional) IP Whitelist
 
 1. Add your IP address to the API key settings
 2. This restricts API access to your IP only
@@ -124,7 +116,6 @@ podman run --env-file .env \
 | --- | --- | --- | --- |
 | `CB_API_KEY` | ✓ | - | Coinbase API key |
 | `CB_API_SECRET` | ✓ | - | Coinbase API secret (Base64) |
-| `CB_API_PASSPHRASE` | ✓ | - | Coinbase API passphrase |
 | `STATE_DB` | | `/app/state/portfolio.db` | Database file path |
 | `DB_PASSWORD` | | - | Database encryption password |
 | `CONFIG_PATH` | | `/app/config.yaml` | Trading config file path |
@@ -138,7 +129,6 @@ podman run --env-file .env \
 ### ✅ DO
 
 - ✓ Keep `.env` out of Git (it's in `.gitignore`)
-- ✓ Use strong passphrases
 - ✓ Rotate API keys periodically (every 3-6 months)
 - ✓ Restrict IP whitelist if possible
 - ✓ Store `.env` file with restricted permissions (600)
@@ -150,7 +140,6 @@ podman run --env-file .env \
 - ✗ Grant Withdraw permission
 - ✗ Reuse API keys across projects
 - ✗ Share credentials in Slack/email
-- ✗ Use short passphrases
 
 - ✗ Leave API keys in Docker images
 
@@ -247,7 +236,6 @@ podman-compose up
 ```env
 CB_API_KEY=your_key
 CB_API_SECRET=your_secret
-CB_API_PASSPHRASE=your_passphrase
 PAPER_TRADING=true
 CONFIG_PATH=/app/config.paper.yaml
 
@@ -258,7 +246,6 @@ CONFIG_PATH=/app/config.paper.yaml
 ```env
 CB_API_KEY=your_key
 CB_API_SECRET=your_secret
-CB_API_PASSPHRASE=your_passphrase
 DB_PASSWORD=strong_encryption_password_here
 CONFIG_PATH=/app/config.yaml
 LOG_LEVEL=WARNING
@@ -270,7 +257,6 @@ LOG_LEVEL=WARNING
 ```env
 CB_API_KEY=your_key
 CB_API_SECRET=your_secret
-CB_API_PASSPHRASE=your_passphrase
 LOG_LEVEL=DEBUG
 PAPER_TRADING=true
 

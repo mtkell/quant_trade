@@ -661,12 +661,11 @@ quant_trade_ws_clients {len(self.ws_clients)}
         # Use real Coinbase adapter if credentials provided, otherwise use mock
         api_key = os.environ.get("CB_API_KEY")
         api_secret = os.environ.get("CB_API_SECRET")
-        api_pass = os.environ.get("CB_API_PASSPHRASE")
 
         for p in demo_pairs:
-            if api_key and api_secret and api_pass:
+            if api_key and api_secret:
                 adapter = AsyncCoinbaseAdapter(
-                    api_key, api_secret, api_pass, product_id=p.product_id
+                    api_key, api_secret, product_id=p.product_id
                 )
             else:
                 adapter = _MockAsyncAdapter(p.product_id)

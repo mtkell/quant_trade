@@ -1,7 +1,7 @@
 """Secrets management: load API credentials from environment or config file.
 
 Priority order:
-1. Environment variables: CB_API_KEY, CB_API_SECRET, CB_API_PASSPHRASE
+1. Environment variables: CB_API_KEY, CB_API_SECRET
 2. Config file: ~/.coinbase_config.json or custom path via ENV CB_CONFIG_PATH
 """
 import json
@@ -13,7 +13,6 @@ from typing import Optional, NamedTuple
 class CoinbaseCredentials(NamedTuple):
     api_key: str
     api_secret: str
-    passphrase: str
 
 
 def load_credentials(
@@ -26,7 +25,7 @@ def load_credentials(
                      checks CB_CONFIG_PATH env var, then ~/.coinbase_config.json
     
     Returns:
-        CoinbaseCredentials with api_key, api_secret, passphrase
+        CoinbaseCredentials with api_key, api_secret
     
     Raises:
         ValueError: If credentials are not found or incomplete
@@ -34,10 +33,9 @@ def load_credentials(
     # Try environment variables first (highest priority)
     api_key = os.getenv("CB_API_KEY")
     api_secret = os.getenv("CB_API_SECRET")
-    passphrase = os.getenv("CB_API_PASSPHRASE")
     
-    if api_key and api_secret and passphrase:
-        return CoinbaseCredentials(api_key=api_key, api_secret=api_secret, passphrase=passphrase)
+    if api_key and api_secret:
+        return CoinbaseCredentials(api_key=api_key, api_secret=api_secret)
     
     # Try config file
     if config_path is None:
@@ -52,26 +50,24 @@ def load_credentials(
                 cfg = json.load(f)
             api_key = cfg.get("api_key") or api_key
             api_secret = cfg.get("api_secret") or api_secret
-            passphrase = cfg.get("passphrase") or passphrase
         except Exception as e:
             raise ValueError(f"Failed to load config from {config_path}: {e}")
     
-    if not api_key or not api_secret or not passphrase:
+    if not api_key or not api_secret:
         raise ValueError(
             "Missing Coinbase credentials. Provide via:\n"
-            "  - Environment: CB_API_KEY, CB_API_SECRET, CB_API_PASSPHRASE\n"
+            "  - Environment: CB_API_KEY, CB_API_SECRET\n"
             f"  - Config file: {config_path}\n"
             "  - CB_CONFIG_PATH env var to override config location"
         )
     
-    return CoinbaseCredentials(api_key=api_key, api_secret=api_secret, passphrase=passphrase)
+    return CoinbaseCredentials(api_key=api_key, api_secret=api_secret)
 
 
 def save_config(
     config_path: str,
     api_key: str,
     api_secret: str,
-    passphrase: str,
 ) -> None:
     """Save credentials to a config file for later use.
     
@@ -81,12 +77,10 @@ def save_config(
         config_path: Path to save config file
         api_key: Coinbase API key
         api_secret: Base64-encoded API secret
-        passphrase: API passphrase
     """
     config = {
         "api_key": api_key,
         "api_secret": api_secret,
-        "passphrase": passphrase,
     }
     cfg_file = Path(config_path)
     cfg_file.parent.mkdir(parents=True, exist_ok=True)

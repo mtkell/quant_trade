@@ -33,7 +33,6 @@ cp examples/config.example.yaml config.yaml
 # Set up test credentials (use mock/paper trading)
 export CB_API_KEY="test_key"
 export CB_API_SECRET="test_secret"
-export CB_API_PASSPHRASE="test_passphrase"
 ```
 
 ## Common Development Tasks

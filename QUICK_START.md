@@ -26,7 +26,6 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 # 4. Set Coinbase credentials (for paper trading, use mock values)
 export CB_API_KEY=your_api_key
 export CB_API_SECRET=your_api_secret_base64
-export CB_API_PASSPHRASE=your_passphrase
 
 # 5. Run tests
 make test

@@ -425,7 +425,7 @@ Per `.github/copilot-instructions.md`:
 ### Deployment Steps
 
 1. Copy `examples/config.example.yaml` → `config.yaml`
-2. Set environment variables: `CB_API_KEY`, `CB_API_SECRET`, `CB_API_PASSPHRASE`
+2. Set environment variables: `CB_API_KEY`, `CB_API_SECRET`
 3. Run: `python examples/demo_trader.py` (single pair)
 4. Run: `python examples/demo_multi_pair.py` (multiple pairs)
 5. Monitor: `python scripts/portfolio_dashboard.py`

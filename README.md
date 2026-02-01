@@ -39,7 +39,6 @@ Set environment variables or create `~/.coinbase_config.json`:
 ```bash
 export CB_API_KEY=your_api_key
 export CB_API_SECRET=base64_encoded_secret
-export CB_API_PASSPHRASE=your_passphrase
 ```
 
 ### 3. Configure Trading
@@ -236,7 +235,7 @@ Build and run with Docker:
 docker build -t quant_trade:latest .
 docker run --rm -it \
     -v $(pwd)/state:/app/state \
-    -e CB_API_KEY -e CB_API_SECRET -e CB_API_PASSPHRASE \
+    -e CB_API_KEY -e CB_API_SECRET \
     -e GUI_USER -e GUI_PASS \
     quant_trade:latest
 ```
@@ -245,7 +244,7 @@ Use Podman with `Containerfile` similarly:
 
 ```bash
 podman build -t quant_trade:latest -f Containerfile .
-podman run --rm -it -v $(pwd)/state:/app/state -e CB_API_KEY -e CB_API_SECRET -e CB_API_PASSPHRASE -e GUI_USER -e GUI_PASS quant_trade:latest
+podman run --rm -it -v $(pwd)/state:/app/state -e CB_API_KEY -e CB_API_SECRET -e GUI_USER -e GUI_PASS quant_trade:latest
 ```
 
 Or use `docker-compose`:
@@ -403,8 +402,7 @@ See [docs/MULTI_PAIR_PORTFOLIO.md](docs/MULTI_PAIR_PORTFOLIO.md) for complete AP
 ---
 
 ## Troubleshooting
-
-**Missing credentials**: Set `CB_API_KEY`, `CB_API_SECRET`, `CB_API_PASSPHRASE` env vars or create `~/.coinbase_config.json`
+**Missing credentials**: Set `CB_API_KEY`, `CB_API_SECRET` env vars or create `~/.coinbase_config.json`
 
 **Rate limited**: Adapter retries automatically; check `rate_limit_policy.py` quotas and config
 

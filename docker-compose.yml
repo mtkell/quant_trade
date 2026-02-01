@@ -7,7 +7,6 @@ services:
     environment:
       - CB_API_KEY=${CB_API_KEY}
       - CB_API_SECRET=${CB_API_SECRET}
-      - CB_API_PASSPHRASE=${CB_API_PASSPHRASE}
       - STATE_DB=/app/state/portfolio.db
     volumes:
       - ./state:/app/state

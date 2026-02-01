@@ -37,10 +37,9 @@ class AsyncCoinbaseAdapter:
             order_id = await adapter.place_limit_buy(...)
     """
 
-    def __init__(self, api_key: str, secret: str, passphrase: str, *, base_url: str = "https://api.exchange.coinbase.com", product_id: str = "BTC-USD", timeout: int = 10, max_backoff_seconds: float = 60.0):
+    def __init__(self, api_key: str, secret: str, *, base_url: str = "https://api.exchange.coinbase.com", product_id: str = "BTC-USD", timeout: int = 10, max_backoff_seconds: float = 60.0):
         self.api_key = api_key
         self.secret = secret
-        self.passphrase = passphrase
         self.base_url = base_url.rstrip("/")
         self.product_id = product_id
         self.timeout = timeout
@@ -69,7 +68,6 @@ class AsyncCoinbaseAdapter:
             "CB-ACCESS-KEY": self.api_key,
             "CB-ACCESS-SIGN": signature_b64,
             "CB-ACCESS-TIMESTAMP": timestamp,
-            "CB-ACCESS-PASSPHRASE": self.passphrase,
             "Content-Type": "application/json",
         }
         return headers

@@ -51,7 +51,7 @@ async def main():
         logger.info("Credentials loaded successfully")
     except ValueError as e:
         logger.error(f"Failed to load credentials: {e}")
-        logger.info("Set environment variables: CB_API_KEY, CB_API_SECRET, CB_API_PASSPHRASE")
+        logger.info("Set environment variables: CB_API_KEY, CB_API_SECRET")
         return
     
     # Step 4: Create async adapter with credentials

@@ -15,7 +15,6 @@ Set via environment variables:
 # Coinbase API
 export CB_API_KEY=<your_api_key>
 export CB_API_SECRET=<your_api_secret_base64>
-export CB_API_PASSPHRASE=<your_passphrase>
 
 # GUI access (if using web server)
 export GUI_USER=admin
@@ -179,7 +178,6 @@ make docker-build
 docker run \
   -e CB_API_KEY=$CB_API_KEY \
   -e CB_API_SECRET=$CB_API_SECRET \
-  -e CB_API_PASSPHRASE=$CB_API_PASSPHRASE \
   -v $(pwd)/state:/app/state \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   --name quant-trade \
@@ -194,7 +192,6 @@ docker run \
 # Set environment variables
 export CB_API_KEY=...
 export CB_API_SECRET=...
-export CB_API_PASSPHRASE=...
 
 # Start services
 docker-compose up -d
@@ -243,11 +240,6 @@ spec:
             secretKeyRef:
               name: coinbase-creds
               key: api_secret
-        - name: CB_API_PASSPHRASE
-          valueFrom:
-            secretKeyRef:
-              name: coinbase-creds
-              key: passphrase
         volumeMounts:
         - name: state
           mountPath: /app/state
@@ -291,8 +283,7 @@ Deploy:
 # Create secrets
 kubectl create secret generic coinbase-creds \
   --from-literal=api_key=$CB_API_KEY \
-  --from-literal=api_secret=$CB_API_SECRET \
-  --from-literal=passphrase=$CB_API_PASSPHRASE
+  --from-literal=api_secret=$CB_API_SECRET
 
 # Create config
 kubectl create configmap quant-trade-config --from-file=config.yaml

@@ -69,7 +69,6 @@ Quick Start
 
     export CB_API_KEY=your_api_key
     export CB_API_SECRET=base64_secret
-    export CB_API_PASSPHRASE=your_passphrase
 
 3. **Run Demo**::
 
