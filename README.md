@@ -1,5 +1,11 @@
 # Coinbase Spot Trading Engine — 5m Limit Entry, Dynamic Trailing Exit
 
+[![Tests](https://github.com/mtkell/quant_trade/workflows/Tests/badge.svg)](https://github.com/mtkell/quant_trade/actions/workflows/test.yml)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Linting: ruff](https://img.shields.io/badge/linting-ruff-red)](https://github.com/charliermarsh/ruff)
+
 A production-ready real-time trading system for Coinbase Spot markets featuring:
 
 - **5-minute OHLCV candle analysis** with multi-indicator entry confirmation
@@ -11,6 +17,8 @@ A production-ready real-time trading system for Coinbase Spot markets featuring:
 - **Async-capable architecture** with WebSocket-ready event loop
 - **Structured logging** via loguru
 - **Configuration-driven** (YAML)
+
+**For detailed information, see [QUICK_START.md](QUICK_START.md), [DEVELOPMENT.md](docs/DEVELOPMENT.md), and [DEPLOYMENT.md](docs/DEPLOYMENT.md).**
 
 ---
 

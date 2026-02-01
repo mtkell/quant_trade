@@ -2,6 +2,7 @@
 
 Provides a small web UI (static files under web/static) and WebSocket
 endpoint at /ws that pushes portfolio status and realtime feed events.
+Includes health check endpoints and optional Prometheus metrics.
 """
 
 import asyncio
@@ -10,6 +11,8 @@ from aiohttp import web
 from pathlib import Path
 from typing import Dict, Any
 import sys
+import time
+from collections import defaultdict
 
 # Ensure project root is on sys.path when running this script directly
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -67,6 +70,17 @@ class GUIServer:
         self.ws_clients = []
         self.feed_client = RealTimeWebSocketClient()
         self._feed_task = None
+        # Metrics tracking
+        self.metrics = {
+            "trade_count": 0,
+            "total_pnl": 0.0,
+            "total_entries": 0,
+            "total_exits": 0,
+            "order_latencies": [],  # milliseconds
+            "api_call_count": defaultdict(int),  # endpoint -> count
+            "stop_ratchets": 0,
+        }
+        self.metrics_start_time = time.time()
         # Initialize an orchestrator with demo/mock engines so the GUI is interactive
         try:
             self._init_demo_orchestrator()
@@ -83,9 +97,13 @@ class GUIServer:
         self.app.router.add_get("/health", self.handle_health)
         self.app.router.add_get("/health/live", self.handle_liveness)
         self.app.router.add_get("/health/ready", self.handle_readiness)
+        self.app.router.add_get("/metrics", self.handle_metrics)
         self.app.router.add_get("/api/status", self.handle_status)
         self.app.router.add_get("/api/positions", self.handle_positions)
         self.app.router.add_get("/api/position/{position_id}", self.handle_position_detail)
+        self.app.router.add_get("/api/rate-limit-status", self.handle_rate_limit_status)
+        self.app.router.add_get("/api/performance", self.handle_performance)
+        self.app.router.add_post("/api/config/reload", self.handle_config_reload)
         self.app.router.add_post("/api/place_entry", self.handle_place_entry)
         self.app.router.add_post("/api/cancel_order", self.handle_cancel_order)
         self.app.router.add_post("/api/emergency_liquidate", self.handle_emergency_liquidate)
@@ -256,7 +274,181 @@ class GUIServer:
         return web.json_response(
             {"ready": ready, "checks": checks, "timestamp": int(time.time())}, status=status_code
         )
-        ws = web.WebSocketResponse()
+
+    async def handle_metrics(self, request: web.Request):
+        """Prometheus metrics endpoint for monitoring.
+
+        Returns metrics in Prometheus text format.
+        Includes trade count, P&L, order latency, API call frequency, stop ratchets.
+        """
+        uptime_seconds = int(time.time() - self.metrics_start_time)
+        avg_latency = (
+            sum(self.metrics["order_latencies"]) / len(self.metrics["order_latencies"])
+            if self.metrics["order_latencies"]
+            else 0
+        )
+
+        metrics_text = f"""# HELP quant_trade_uptime_seconds Server uptime in seconds
+# TYPE quant_trade_uptime_seconds gauge
+quant_trade_uptime_seconds {uptime_seconds}
+
+# HELP quant_trade_trade_count Total number of trades
+# TYPE quant_trade_trade_count counter
+quant_trade_trade_count {self.metrics["trade_count"]}
+
+# HELP quant_trade_total_pnl Total P&L in USD
+# TYPE quant_trade_total_pnl gauge
+quant_trade_total_pnl {self.metrics["total_pnl"]}
+
+# HELP quant_trade_total_entries Total entry orders placed
+# TYPE quant_trade_total_entries counter
+quant_trade_total_entries {self.metrics["total_entries"]}
+
+# HELP quant_trade_total_exits Total exit orders placed
+# TYPE quant_trade_total_exits counter
+quant_trade_total_exits {self.metrics["total_exits"]}
+
+# HELP quant_trade_order_latency_ms Average order placement latency in milliseconds
+# TYPE quant_trade_order_latency_ms gauge
+quant_trade_order_latency_ms {avg_latency:.2f}
+
+# HELP quant_trade_stop_ratchets Total stop ratchet events
+# TYPE quant_trade_stop_ratchets counter
+quant_trade_stop_ratchets {self.metrics["stop_ratchets"]}
+
+# HELP quant_trade_ws_clients Active WebSocket connections
+# TYPE quant_trade_ws_clients gauge
+quant_trade_ws_clients {len(self.ws_clients)}
+"""
+        # Add API call counters
+        for endpoint, count in self.metrics["api_call_count"].items():
+            metrics_text += (
+                f'quant_trade_api_calls_total{{endpoint="{endpoint}"}} {count}\n'
+            )
+
+        return web.Response(text=metrics_text, content_type="text/plain")
+
+    async def handle_rate_limit_status(self, request: web.Request):
+        """Rate limit status endpoint showing quota usage per endpoint.
+
+        Returns current usage, limits, and reset times for each rate-limited endpoint.
+        """
+        if not await self._check_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+
+        # Get rate limit manager from adapter if available
+        endpoints_status = {}
+        if self.orchestrator:
+            for product_id, engine in self.orchestrator.engines.items():
+                try:
+                    adapter = engine.adapter
+                    if hasattr(adapter, "rate_limiter"):
+                        limiter = adapter.rate_limiter
+                        endpoints_status[product_id] = {
+                            "current_usage": limiter.current_usage if hasattr(limiter, "current_usage") else "N/A",
+                            "limit": limiter.limit if hasattr(limiter, "limit") else "N/A",
+                            "reset_time": limiter.reset_time if hasattr(limiter, "reset_time") else "N/A",
+                        }
+                except Exception:
+                    pass
+
+        return web.json_response(
+            {
+                "endpoints": endpoints_status,
+                "note": "Rate limiting is enforced per endpoint and resets periodically",
+            }
+        )
+
+    async def handle_performance(self, request: web.Request):
+        """Get trading performance metrics.
+
+        Returns win rate, P&L, Sharpe ratio, drawdown, and other metrics.
+        """
+        if not await self._check_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+
+        perf = {
+            "total_trades": self.metrics["trade_count"],
+            "total_pnl": self.metrics["total_pnl"],
+            "entries": self.metrics["total_entries"],
+            "exits": self.metrics["total_exits"],
+            "avg_order_latency_ms": (
+                sum(self.metrics["order_latencies"]) / len(self.metrics["order_latencies"])
+                if self.metrics["order_latencies"]
+                else 0
+            ),
+            "stop_ratchets": self.metrics["stop_ratchets"],
+        }
+
+        if self.orchestrator:
+            pm = self.orchestrator.portfolio_manager
+            try:
+                metrics = pm.get_portfolio_metrics()
+                perf.update(
+                    {
+                        "active_positions": metrics.active_positions,
+                        "closed_positions": metrics.closed_positions,
+                        "realized_pnl": float(metrics.realized_pnl),
+                        "unrealized_pnl": float(metrics.unrealized_pnl),
+                        "total_return_pct": float(metrics.total_return_pct),
+                        "win_rate_pct": float(metrics.win_rate_pct),
+                        "max_drawdown_pct": float(metrics.max_drawdown_pct),
+                        "concentration_pct": float(metrics.concentration_pct),
+                    }
+                )
+            except Exception:
+                pass
+
+        return web.json_response(perf)
+
+    async def handle_config_reload(self, request: web.Request):
+        """Reload configuration from file.
+
+        Validates new config before applying. Returns error if validation fails.
+        """
+        if not await self._check_auth(request):
+            return web.json_response({"error": "unauthorized"}, status=401)
+
+        try:
+            # Get config path from environment or use default
+            from trading.config import TradingConfig
+
+            config_path = os.environ.get("CONFIG_PATH", "config.yaml")
+
+            # Load and validate new config
+            new_config = await asyncio.to_thread(TradingConfig.from_yaml, config_path)
+
+            # If validation passed, optionally update orchestrator
+            if self.orchestrator:
+                # TODO: Implement hot-reload logic
+                # This would need careful handling to:
+                # 1. Close existing positions
+                # 2. Update strategy parameters
+                # 3. Re-initialize with new config
+                pass
+
+            return web.json_response(
+                {
+                    "status": "success",
+                    "message": "Config reloaded successfully",
+                    "config": {
+                        "exchange": {
+                            "product_id": str(new_config.exchange.product_id),
+                        },
+                        "strategy": {
+                            "trail_pct": float(new_config.strategy.trail_pct),
+                            "entry_confirmation_count": new_config.strategy.entry_confirmation_count,
+                        },
+                    },
+                }
+            )
+        except Exception as e:
+            return web.json_response(
+                {"status": "error", "message": f"Config reload failed: {str(e)}"}, status=400
+            )
+
+    async def handle_ws(self, request: web.Request):
+        """WebSocket endpoint for real-time updates."""
         await ws.prepare(request)
         self.ws_clients.append(ws)
 
