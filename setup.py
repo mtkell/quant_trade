@@ -26,7 +26,6 @@ setup(
         "pyyaml>=6.0,<7.0",
         "loguru>=0.7.0,<1.0",
         "pydantic>=2.0.0,<3.0",
-        "sqlcipher3-binary>=3.4.0,<4.0",
     ],
     extras_require={
         "dev": [
@@ -41,6 +40,9 @@ setup(
         ],
         "monitoring": [
             "prometheus-client>=0.17.0,<1.0",
+        ],
+        "encryption": [
+            "sqlcipher3-binary>=0.6.0,<1.0",
         ],
     },
     classifiers=[

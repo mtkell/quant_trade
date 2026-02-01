@@ -37,6 +37,18 @@ export DB_PASSWORD=<strong_password>
 
 ### 2. Configuration Review
 
+**Create your config file** from the examples:
+
+```bash
+# Copy example config to root directory
+cp examples/config.example.yaml config.yaml
+
+# Or use a preset:
+cp examples/config.conservative.yaml config.yaml  # Conservative settings
+cp examples/config.aggressive.yaml config.yaml    # Aggressive settings
+cp examples/config.paper.yaml config.yaml         # Paper trading
+```
+
 Before deploying, review `config.yaml`:
 
 ```bash
@@ -62,22 +74,37 @@ cat config.yaml | grep max_positions  # Should match capital allocation
 
 ### 3. Database Initialization
 
-```bash
+The database is automatically initialized when the trading system first runs. You can optionally pre-create it:
 
+```bash
 # Ensure state directory exists
 mkdir -p state
 
-# Initialize database with encryption (optional)
-python -c "from trading.db_encryption import init_encrypted_db; \
-           db = init_encrypted_db('state/portfolio.db'); print('DB ready')"
+# Pre-initialize database (optional - will auto-create on first run)
+python3 -c "from trading.persistence_sqlite import SQLitePersistence; \
+           from pathlib import Path; \
+           p = SQLitePersistence(Path('state/portfolio.db')); \
+           print('Database initialized at state/portfolio.db')"
 
-# Or without encryption:
-python -c "from trading.persistence_sqlite import SQLitePersistence; \
-           p = SQLitePersistence('state/portfolio.db'); print('DB ready')"
+# Verify database integrity (using Python's built-in sqlite3)
+python3 -c "import sqlite3; \
+           conn = sqlite3.connect('state/portfolio.db'); \
+           result = conn.execute('PRAGMA integrity_check').fetchone()[0]; \
+           print(f'Database integrity: {result}'); \
+           conn.close()"
+```
 
-# Verify database integrity
-sqlite3 state/portfolio.db "PRAGMA integrity_check;"
+**For encrypted database** (requires sqlcipher3):
 
+```bash
+# Install sqlcipher support
+pip install "sqlcipher3-binary"
+
+# Set encryption password
+export DB_PASSWORD=<strong_password>
+
+# Database will be encrypted automatically when DB_PASSWORD is set
+# The trading system reads DB_PASSWORD and uses encrypted connections
 ```
 
 ### 4. API Permissions
@@ -92,36 +119,55 @@ sqlite3 state/portfolio.db "PRAGMA integrity_check;"
 - Consider separate keys for paper trading vs live trading
 - Rotate API keys every 3-6 months
 
-**Test API connectivity**:
+**Test API connectivity** (after installing dependencies):
 
 ```bash
-python -c "from trading.coinbase_adapter import CoinbaseAdapter; \
+# Activate virtual environment first
+source .venv/bin/activate
+
+# Install dependencies (if not already installed)
+pip install -e .
+
+# Load credentials from .env if you're using one
+set -a
+source .env
+set +a
+
+# Test API connection
+python3 -c "from trading.coinbase_adapter import CoinbaseAdapter; \
            from trading.secrets import load_credentials; \
            creds = load_credentials(); \
            adapter = CoinbaseAdapter.from_credentials(creds); \
-           print('API connected:', adapter.get_accounts()[:1])"
-
+           print('API connected - testing products endpoint...'); \
+           products = adapter._request('GET', '/products', None); \
+           print(f'Success: Found {len(products)} trading pairs')"
 ```
 
 ## Deployment Methods
 
 ### Option 1: Direct Python (Single Machine)
 
+**Initial setup**:
+
 ```bash
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate it
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install production dependencies
 pip install -e .
-
 ```
 
-```bash
+**Run directly**:
 
-# Run trading engine
-python examples/demo_multi_pair.py
+```bash
+# With virtual environment activated
+python3 examples/demo_multi_pair.py
 
 # Or run with nohup for persistent background execution
-nohup python examples/demo_multi_pair.py > logs/trading.log 2>&1 &
-
+nohup python3 examples/demo_multi_pair.py > logs/trading.log 2>&1 &
 ```
 
 **Systemd service** (`/etc/systemd/system/quant-trade.service`):
@@ -185,6 +231,18 @@ docker run \
 
 ```
 
+If you store credentials in `.env`, load them with `--env-file`:
+
+```bash
+docker run \
+  --env-file .env \
+  -v $(pwd)/state:/app/state \
+  -v $(pwd)/config.yaml:/app/config.yaml:ro \
+  --name quant-trade \
+  quant-trade:latest
+
+```
+
 **Using docker-compose**:
 
 ```bash
@@ -192,6 +250,9 @@ docker run \
 # Set environment variables
 export CB_API_KEY=...
 export CB_API_SECRET=...
+
+# Or use .env (docker compose auto-loads it if present)
+# cp .env.example .env
 
 # Start services
 docker-compose up -d
@@ -336,10 +397,10 @@ View logs:
 ```bash
 
 # Direct output
-python examples/demo_multi_pair.py
+python3 examples/demo_multi_pair.py
 
 # With file capture
-python examples/demo_multi_pair.py 2>&1 | tee logs/trading.log
+python3 examples/demo_multi_pair.py 2>&1 | tee logs/trading.log
 
 # Docker
 docker logs quant-trade -f
@@ -356,10 +417,15 @@ Check open positions:
 ```bash
 
 # Via CLI tool
-python scripts/position_status.py list
+python3 scripts/position_status.py list
 
-# Via database
-sqlite3 state/portfolio.db "SELECT * FROM positions;"
+# Via database (using Python)
+python3 -c "import sqlite3; \
+           conn = sqlite3.connect('state/portfolio.db'); \
+           rows = conn.execute('SELECT * FROM positions').fetchall(); \
+           print(f'Open positions: {len(rows)}'); \
+           for row in rows: print(row); \
+           conn.close()"
 
 # Via API
 curl http://localhost:8080/api/positions
@@ -439,10 +505,15 @@ systemctl status quant-trade
 ```bash
 
 # Via CLI
-python scripts/order_manager.py force-exit all
+python3 scripts/order_manager.py force-exit all
 
-# Or manually via database
-sqlite3 state/portfolio.db "UPDATE positions SET status='FORCED_EXIT';"
+# Or manually via database (using Python)
+python3 -c "import sqlite3; \
+           conn = sqlite3.connect('state/portfolio.db'); \
+           conn.execute(\"UPDATE positions SET status='FORCED_EXIT'\"); \
+           conn.commit(); \
+           print('All positions marked for forced exit'); \
+           conn.close()"
 
 ```
 
@@ -511,10 +582,14 @@ ls -lh state/portfolio.db
 
 ```
 
-Vacuum to reclaim space:
+Vacuum to reclaim space (using Python):
 
 ```bash
-sqlite3 state/portfolio.db "VACUUM;"
+python3 -c "import sqlite3; \
+           conn = sqlite3.connect('state/portfolio.db'); \
+           conn.execute('VACUUM'); \
+           print('Database vacuumed successfully'); \
+           conn.close()"
 
 ```
 
@@ -528,7 +603,7 @@ sqlite3 state/portfolio.db "VACUUM;"
 curl -X GET "https://api.exchange.coinbase.com/products"
 
 # Check credentials
-python -c "from trading.secrets import load_credentials; \
+python3 -c "from trading.secrets import load_credentials; \
            print(load_credentials())"
 
 ```
@@ -536,12 +611,21 @@ python -c "from trading.secrets import load_credentials; \
 ### Database Corruption
 
 ```bash
+# Check integrity (using Python)
+python3 -c "import sqlite3; \
+           conn = sqlite3.connect('state/portfolio.db'); \
+           result = conn.execute('PRAGMA integrity_check').fetchone()[0]; \
+           print(f'Database integrity: {result}'); \
+           conn.close()"
 
-# Check integrity
-sqlite3 state/portfolio.db "PRAGMA integrity_check;"
-
-# Rebuild if corrupted
-sqlite3 state/portfolio.db "VACUUM; REINDEX;"
+# Rebuild if corrupted (using Python)
+python3 -c "import sqlite3; \
+           conn = sqlite3.connect('state/portfolio.db'); \
+           conn.execute('VACUUM'); \
+           conn.execute('REINDEX'); \
+           conn.commit(); \
+           print('Database rebuilt'); \
+           conn.close()"
 
 ```
 
