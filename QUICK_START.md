@@ -5,12 +5,14 @@ Get up and running with the Coinbase Spot Trading Engine in minutes.
 ## Prerequisites
 
 - Python 3.9 or higher
+
 - Git
 - Virtual environment (venv)
 
 ## 5-Minute Setup
 
 ```bash
+
 # 1. Clone the repository
 git clone https://github.com/yourusername/quant_trade.git
 cd quant_trade
@@ -31,6 +33,7 @@ make test
 
 # 6. Run demo (uses mock adapter)
 python examples/demo_trader.py
+
 ```
 
 That's it! You're ready to develop or deploy.
@@ -38,6 +41,7 @@ That's it! You're ready to develop or deploy.
 ## Verify Installation
 
 ```bash
+
 # Check Python version
 python --version  # Should be 3.9+
 
@@ -46,11 +50,13 @@ which python  # Should show .venv directory
 
 # Run a quick test
 pytest tests/test_position.py -v
+
 ```
 
 ## Common Commands
 
 ```bash
+
 # Development
 make format          # Auto-format code
 make lint           # Check code style
@@ -66,6 +72,7 @@ make docker-down    # Stop docker-compose
 # Utilities
 make clean          # Clean generated files
 make help           # Show all available commands
+
 ```
 
 ## Configuration
@@ -73,22 +80,27 @@ make help           # Show all available commands
 ### Create Your Config
 
 ```bash
+
 # Copy example config
 cp examples/config.example.yaml config.yaml
 
 # Edit for your preferences
 nano config.yaml  # or your favorite editor
+
 ```
 
 ### Example Configs
 
 - **Conservative**: Low-risk, wide stops → `examples/config.conservative.yaml`
+
 - **Aggressive**: High-frequency, tight stops → `examples/config.aggressive.yaml`
+
 - **Paper Trading**: Simulated mode → `examples/config.paper.yaml`
 
 ## Development Workflow
 
 ```bash
+
 # 1. Create feature branch
 git checkout -b feature/my-feature
 
@@ -105,11 +117,13 @@ git commit -m "feat: add awesome feature"
 
 # 5. Push and create PR
 git push origin feature/my-feature
+
 ```
 
 ## Testing
 
 ```bash
+
 # Run all tests
 make test
 
@@ -121,15 +135,19 @@ make test-cov
 
 # Open coverage report
 open htmlcov/index.html  # macOS
+
 # or
 xdg-open htmlcov/index.html  # Linux
+
 # or
 start htmlcov/index.html  # Windows
+
 ```
 
 ## Code Quality
 
 ```bash
+
 # Auto-fix formatting
 make format
 
@@ -141,6 +159,7 @@ make type-check
 
 # Run everything
 make check
+
 ```
 
 ## Debugging
@@ -151,12 +170,14 @@ Enable debug logging:
 from trading.logging_setup import logger
 logger.enable("trading")
 logger.debug("This will print")
+
 ```
 
 Use pytest debugging:
 
 ```bash
 pytest tests/test_trailing_ratchet.py -v --pdb  # Drop to debugger on failure
+
 ```
 
 Inspect database:
@@ -165,11 +186,13 @@ Inspect database:
 sqlite3 state.db
 sqlite> SELECT * FROM positions;
 sqlite> .schema
+
 ```
 
 ## Docker Development
 
 ```bash
+
 # Build image
 make docker-build
 
@@ -184,11 +207,13 @@ docker-compose logs -f quant-trade
 
 # Stop
 make docker-down
+
 ```
 
 ## VS Code Setup
 
 ```bash
+
 # Install recommended extensions
 code --install-extension ms-python.python
 code --install-extension ms-python.vscode-pylance
@@ -196,57 +221,77 @@ code --install-extension ms-python.black-formatter
 code --install-extension charliermarsh.ruff
 
 # Or let VS Code prompt you when opening the workspace
+
 ```
 
 ## Getting Help
 
 1. **Setup Issues** → See `docs/DEVELOPMENT.md`
+
 2. **Deployment** → See `docs/DEPLOYMENT.md`
+
 3. **Architecture** → See `docs/ADRs/`
+
 4. **API Reference** → Check module docstrings in `trading/`
+
 5. **Examples** → See `examples/` and `tests/`
 
 ## Troubleshooting
 
 **Virtual environment not activating?**
+
 ```bash
+
 # Recreate it
 rm -rf .venv
 python -m venv .venv
 source .venv/bin/activate
 make install-dev
+
 ```
 
 **Pre-commit hooks failing?**
+
 ```bash
+
 # Reinstall hooks
 pre-commit install
 pre-commit run --all-files  # Run manually to fix
+
 ```
 
 **Database corruption?**
+
 ```bash
+
 # Clean up
 rm state/portfolio.db
+
 # Or vacuum if just needs optimization
 sqlite3 state/portfolio.db "VACUUM;"
+
 ```
 
 **API connection issues?**
+
 ```bash
+
 # Test credentials
 python -c "from trading.secrets import load_credentials; print(load_credentials())"
 
 # Test API
 curl https://api.exchange.coinbase.com/products
+
 ```
 
 ## Useful Resources
 
-- **Python Docs**: https://docs.python.org/3/
-- **pytest Docs**: https://docs.pytest.org/
-- **Decimal Module**: https://docs.python.org/3/library/decimal.html
-- **aiohttp Docs**: https://docs.aiohttp.org/
+- **Python Docs**: <https://docs.python.org/3/>
+
+- **pytest Docs**: <https://docs.pytest.org/>
+- **Decimal Module**: <https://docs.python.org/3/library/decimal.html>
+
+- **aiohttp Docs**: <https://docs.aiohttp.org/>
 - **SQLite CLI**: `sqlite3 state.db`
 
 ## Next Steps
@@ -263,6 +308,7 @@ curl https://api.exchange.coinbase.com/products
 
 ```bash
 make install-dev && source .venv/bin/activate && make test
+
 ```
 
 Good luck! 🚀
