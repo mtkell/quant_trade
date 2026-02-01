@@ -72,6 +72,7 @@ make check
 ```
 
 **Key Standards:**
+
 - Line length: 100 characters (black)
 - Python version: 3.9+ (targeted via ruff)
 - Type hints: Required for new code
@@ -81,6 +82,7 @@ make check
 ### Writing Tests
 
 Tests go in `tests/` with `test_` prefix. Use pytest:
+
 
 ```python
 import pytest
@@ -149,6 +151,7 @@ git commit -m "WIP"
 ```
 
 **Format:**
+
 - Imperative mood ("Add" not "Added")
 - First line ≤ 50 characters
 - Reference issues if applicable: "Fixes #123"
@@ -158,6 +161,7 @@ git commit -m "WIP"
 ### Before Submitting
 
 1. **Run all checks:**
+
    ```bash
    make check
    ```
@@ -165,6 +169,7 @@ git commit -m "WIP"
 2. **Update documentation** for user-facing changes
 
 3. **Rebase on main** if needed:
+
    ```bash
    git fetch origin
    git rebase origin/main
@@ -173,6 +178,7 @@ git commit -m "WIP"
 ### PR Description
 
 Include:
+
 - What problem does this solve?
 - How does it solve it?
 - Any trade-offs or alternatives considered?
@@ -204,6 +210,7 @@ How to verify the changes work
 ### CI/CD
 
 GitHub Actions automatically:
+
 - Runs tests on Python 3.9-3.13
 - Checks linting (ruff, black)
 - Validates type hints (mypy)
@@ -215,11 +222,12 @@ Your PR must pass all checks before merging.
 
 ### Security Issues
 
-**Do not** open a public issue for security vulnerabilities. Email security@yourdomain.com instead.
+**Do not** open a public issue for security vulnerabilities. Email [security@yourdomain.com](mailto:security@yourdomain.com) instead.
 
 ### Bug Reports
 
 Include:
+
 - Python version and OS
 - Trading system version
 - Steps to reproduce
@@ -240,17 +248,18 @@ Include:
 3. Wait for entry signal
 
 **Error:**
-```
+
+```text
 ConnectionError: Failed to connect to Coinbase API
 ```
 
 **Expected:** Should retry with exponential backoff
 **Actual:** Exits immediately
-```
 
 ### Feature Requests
 
 Include:
+
 - Use case and motivation
 - Proposed solution (if any)
 - Alternative approaches
@@ -260,7 +269,7 @@ Include:
 
 Key files for contributors:
 
-```
+```text
 quant_trade/
 ├── trading/               # Core trading logic
 │   ├── position.py       # Position state + ratchet
@@ -296,6 +305,7 @@ quant_trade/
 ## Recognition
 
 Contributors are recognized in:
+
 - GitHub contributors page
 - Release notes for PRs
 - CONTRIBUTORS.md (when created)

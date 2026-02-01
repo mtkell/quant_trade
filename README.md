@@ -175,7 +175,7 @@ python scripts/migrate.py --db state.db rollback --last
 
 ## File Structure
 
-```
+```text
 quant_trade/
 ├── trading/
 │   ├── position.py                  # PositionState + ratchet
@@ -254,7 +254,7 @@ Or use `docker-compose`:
 docker compose up --build
 ```
 
-## Testing
+## Test Suite
 
 ```bash
 pytest -q
@@ -296,6 +296,7 @@ python scripts/order_manager.py --db state.db force-exit BTC_001 51000
 ### Trade History Reporter
 
 Analyze fills and track P&L:
+
 ```bash
 # View P&L summary
 python scripts/trade_history.py --db state.db summary
@@ -324,7 +325,7 @@ Expand from single-position trading to manage concurrent positions across 5-10+ 
 - **Portfolio metrics** (capital allocation, P&L aggregation, win-rate tracking)
 - **Rebalancing detection** with drift-based recommendations
 
-### Quick Start
+### Getting Started with Multi-Pair
 
 ```bash
 # Run multi-pair demonstration
@@ -336,7 +337,7 @@ python scripts/portfolio_dashboard.py concentration
 python scripts/portfolio_dashboard.py pairs
 ```
 
-### Configuration
+### Portfolio Configuration
 
 ```python
 from trading.portfolio_manager import PortfolioConfig, PairConfig
