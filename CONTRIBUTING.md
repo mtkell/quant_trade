@@ -90,10 +90,10 @@ from decimal import Decimal
 def test_position_ratchet_logic():
     """Test that stop only ratchets upward."""
     pos = PositionState(entry_price=Decimal('50000'), qty_filled=Decimal('0.1'))
-    
+
     # Should ratchet up
     assert pos.ratchet_stop(Decimal('51000'), Decimal('0.02')) == True
-    
+
     # Should not ratchet down
     assert pos.ratchet_stop(Decimal('49000'), Decimal('0.02')) == False
 ```

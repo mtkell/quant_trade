@@ -63,7 +63,7 @@ class BacktestResults:
     total_return_pct: Decimal
     max_drawdown_pct: Decimal
     sharpe_ratio: Optional[Decimal] = None
-    trades: List[Dict[str, Any]] = None
+    trades: Optional[List[Dict[str, Any]]] = None
 
 
 class BacktestEngine:
@@ -120,9 +120,7 @@ class BacktestEngine:
         final_capital = self.available_capital + self._unrealized_pnl()
         total_pnl = final_capital - self.initial_capital
         total_return_pct = (
-            (total_pnl / self.initial_capital * 100)
-            if self.initial_capital > 0
-            else Decimal("0")
+            (total_pnl / self.initial_capital * 100) if self.initial_capital > 0 else Decimal("0")
         )
 
         winning_trades = len([t for t in self.closed_positions if t["pnl"] > 0])
@@ -140,7 +138,7 @@ class BacktestEngine:
                 mean_return = statistics.mean(returns)
                 stdev = statistics.stdev(returns)
                 if stdev > 0:
-                    sharpe_ratio = Decimal(str((mean_return / stdev) * (252 ** 0.5)))
+                    sharpe_ratio = Decimal(str((mean_return / stdev) * (252**0.5)))
             except Exception:
                 pass
 

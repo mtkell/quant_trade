@@ -66,7 +66,7 @@ pytest -q
 
 ## Architecture
 
-```
+```text
 Execution Engine (sync/async)
 ├── OrderStateMachine + PositionState
 │   └── Trailing ratchet logic (stops only move up)

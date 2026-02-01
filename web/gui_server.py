@@ -322,9 +322,7 @@ quant_trade_ws_clients {len(self.ws_clients)}
 """
         # Add API call counters
         for endpoint, count in self.metrics["api_call_count"].items():
-            metrics_text += (
-                f'quant_trade_api_calls_total{{endpoint="{endpoint}"}} {count}\n'
-            )
+            metrics_text += f'quant_trade_api_calls_total{{endpoint="{endpoint}"}} {count}\n'
 
         return web.Response(text=metrics_text, content_type="text/plain")
 
@@ -345,9 +343,15 @@ quant_trade_ws_clients {len(self.ws_clients)}
                     if hasattr(adapter, "rate_limiter"):
                         limiter = adapter.rate_limiter
                         endpoints_status[product_id] = {
-                            "current_usage": limiter.current_usage if hasattr(limiter, "current_usage") else "N/A",
+                            "current_usage": (
+                                limiter.current_usage
+                                if hasattr(limiter, "current_usage")
+                                else "N/A"
+                            ),
                             "limit": limiter.limit if hasattr(limiter, "limit") else "N/A",
-                            "reset_time": limiter.reset_time if hasattr(limiter, "reset_time") else "N/A",
+                            "reset_time": (
+                                limiter.reset_time if hasattr(limiter, "reset_time") else "N/A"
+                            ),
                         }
                 except Exception:
                     pass
