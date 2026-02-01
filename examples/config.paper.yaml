@@ -1,0 +1,40 @@
+# Paper Trading Config
+# Simulated trading with mock adapter, no real funds or API calls
+# Use for testing strategies and backtesting
+
+exchange:
+  product_id: "BTC-USD"
+  timeout: 10
+  max_retries: 5
+  # Use mock adapter in code: adapter = MockAsyncAdapter(product_id)
+
+strategy:
+  trail_pct: 0.02  # 2% trailing stop
+  stop_limit_buffer_pct: 0.005  # 0.5% buffer
+  min_ratchet: 0.001  # 0.1% minimum ratchet
+  max_entry_wait_candles: 10
+  stop_timeout_seconds: 120
+
+indicators:
+  rsi_period: 14
+  rsi_oversold: 30
+  rsi_overbought: 70
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  vwap_lookback: 20
+  fast_ema_period: 5
+
+entry:
+  required_confirmations: 2
+  higher_tf_regime: true
+
+portfolio:
+  max_positions: 10  # More positions for experimentation
+  max_position_size_usd: 1000
+  max_portfolio_leverage: 1.0
+
+# Database will be created in /tmp for paper trading
+database:
+  path: "/tmp/paper_trading.db"
+  encryption: false

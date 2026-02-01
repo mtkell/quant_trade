@@ -1,0 +1,34 @@
+# Aggressive Trading Config
+# Higher frequency, tight stops, growth-oriented parameters
+# Suitable for active monitoring and quick exits
+
+exchange:
+  product_id: "BTC-USD"
+  timeout: 5
+  max_retries: 3
+
+strategy:
+  trail_pct: 0.01  # 1% trailing stop (tight)
+  stop_limit_buffer_pct: 0.003  # 0.3% buffer below trigger
+  min_ratchet: 0.0005  # 0.05% minimum ratchet threshold
+  max_entry_wait_candles: 5  # Wait up to 5 candles (25 min)
+  stop_timeout_seconds: 60  # 1 minute
+
+indicators:
+  rsi_period: 9
+  rsi_oversold: 35
+  rsi_overbought: 65
+  macd_fast: 10
+  macd_slow: 20
+  macd_signal: 5
+  vwap_lookback: 10
+  fast_ema_period: 3
+
+entry:
+  required_confirmations: 3  # All 3 indicators must confirm (stricter)
+  higher_tf_regime: true
+
+portfolio:
+  max_positions: 5
+  max_position_size_usd: 2000
+  max_portfolio_leverage: 1.0

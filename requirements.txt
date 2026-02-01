@@ -1,0 +1,8 @@
+pytest
+requests
+aiohttp
+pytest-asyncio
+
+aiohttp-session
+cryptography
+

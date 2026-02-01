@@ -1,0 +1,51 @@
+# Example Trading Configuration
+#
+# Copy this to config.yaml and customize for your setup.
+# Environment variables can be interpolated: ${VAR_NAME}
+
+exchange:
+  # Coinbase product pair
+  product_id: BTC-USD
+  
+  # API endpoint (use sandbox for testing)
+  base_url: https://api.exchange.coinbase.com
+  # Sandbox: https://api-sandbox.exchange.coinbase.com
+  
+  # Request timeout in seconds
+  timeout: 10
+  
+  # Max retries for 5xx errors
+  max_retries: 5
+  
+  # Max backoff for exponential retry
+  max_backoff_seconds: 60.0
+
+strategy:
+  # Trailing stop percentage (2% = move up stop by 2% below highest)
+  trail_pct: 0.02
+  
+  # Stop limit buffer (0.5% below trigger)
+  stop_limit_buffer_pct: 0.005
+  
+  # Minimum ratchet distance (0.1% must improve trigger to replace)
+  min_ratchet: 0.001
+
+rate_limit:
+  # Max requests per second for /orders endpoint
+  orders_per_second: 15
+  
+  # Max requests per second for other endpoints
+  default_per_second: 10
+
+persistence:
+  # Database file path
+  db_path: state.db
+  
+  # Optional: encryption password for database (requires sqlcipher)
+  # encryption_password: ${DB_PASSWORD}
+  
+  # Log file path
+  log_file: trading.log
+  
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: INFO

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quant Trade - Portfolio GUI</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; }
+    .panel { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 6px; }
+    .btn { padding: 6px 12px; border-radius: 4px; background:#0078D4; color:white; cursor:pointer; }
+    .btn-secondary { background:#444; }
+    pre { background:#f6f6f6; padding:8px; }
+    #feed { height: 200px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>Quant Trade — Portfolio GUI</h1>
+
+  <div class="panel" id="auth-panel">
+    <h2>Login</h2>
+    <label>User: <input id="login-user" /></label>
+    <label>Pass: <input id="login-pass" type="password" /></label>
+    <button class="btn" id="login-btn">Login</button>
+    <button class="btn btn-secondary" id="logout-btn">Logout</button>
+    <div id="current-user">Not logged in</div>
+  </div>
+
+  <div class="panel" id="status-panel">
+    <h2>Portfolio Status</h2>
+    <div id="status">Connecting...</div>
+    <button class="btn" id="refresh">Refresh</button>
+  </div>
+
+  <div class="panel">
+    <h2>Place Entry</h2>
+    <label>Product ID: <input id="entry-product" value="BTC-USD" /></label>
+    <label>Price: <input id="entry-price" value="50000" /></label>
+    <label>Qty: <input id="entry-qty" value="0.01" /></label>
+    <button class="btn" id="place-entry">Place Entry</button>
+  </div>
+
+  <div class="panel">
+    <h2>Positions</h2>
+    <div id="positions">Loading...</div>
+    <button class="btn" id="refresh-positions">Refresh Positions</button>
+  </div>
+
+  <div class="panel">
+    <h2>Realtime Feed (raw)</h2>
+    <pre id="feed"></pre>
+  </div>
+
+  <div class="panel">
+    <h2>Actions</h2>
+    <button class="btn btn-secondary" id="emergency">Emergency Liquidate (demo)</button>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
