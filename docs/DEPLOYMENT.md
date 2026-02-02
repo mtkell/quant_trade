@@ -224,6 +224,7 @@ make docker-build
 docker run \
   -e CB_API_KEY=$CB_API_KEY \
   -e CB_API_SECRET=$CB_API_SECRET \
+  -p 8080:8080 \
   -v $(pwd)/state:/app/state \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   --name quant-trade \
@@ -236,6 +237,7 @@ If you store credentials in `.env`, load them with `--env-file`:
 ```bash
 docker run \
   --env-file .env \
+  -p 8080:8080 \
   -v $(pwd)/state:/app/state \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   --name quant-trade \

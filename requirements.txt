@@ -5,4 +5,5 @@ pytest-asyncio
 
 aiohttp-session
 cryptography
+loguru
 

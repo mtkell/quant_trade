@@ -234,6 +234,7 @@ Build and run with Docker:
 ```bash
 docker build -t quant_trade:latest .
 docker run --rm -it \
+    -p 8080:8080 \
     -v $(pwd)/state:/app/state \
     -e CB_API_KEY -e CB_API_SECRET \
     -e GUI_USER -e GUI_PASS \
@@ -244,7 +245,7 @@ Use Podman with `Containerfile` similarly:
 
 ```bash
 podman build -t quant_trade:latest -f Containerfile .
-podman run --rm -it -v $(pwd)/state:/app/state -e CB_API_KEY -e CB_API_SECRET -e GUI_USER -e GUI_PASS quant_trade:latest
+podman run --rm -it -p 8080:8080 -v $(pwd)/state:/app/state -e CB_API_KEY -e CB_API_SECRET -e GUI_USER -e GUI_PASS quant_trade:latest
 ```
 
 Or use `docker-compose`:

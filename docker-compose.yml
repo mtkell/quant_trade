@@ -10,6 +10,8 @@ services:
       - STATE_DB=/app/state/portfolio.db
     volumes:
       - ./state:/app/state
+    ports:
+      - "${GUI_PORT:-8080}:8080"
     restart: unless-stopped
-    # default demo command; override as needed
-    command: python examples/demo_multi_pair.py
+    # default GUI server command; override as needed
+    command: python web/gui_server.py

@@ -23,5 +23,5 @@ VOLUME ["/app/state"]
 
 ENV STATE_DB=/app/state/portfolio.db
 
-# Default command runs the multi-pair demo; override in compose or CLI
-CMD ["python", "examples/demo_multi_pair.py"]
+# Default command runs the GUI server (includes /health endpoints); override in compose or CLI
+CMD ["python", "web/gui_server.py"]

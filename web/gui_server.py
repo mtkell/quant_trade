@@ -60,8 +60,13 @@ class GUIServer:
     def __init__(
         self, host: str = "0.0.0.0", port: int = 8080, db_path: Path = Path("state/portfolio.db")
     ):
-        self.host = host
-        self.port = port
+        env_host = os.environ.get("GUI_HOST")
+        env_port = os.environ.get("GUI_PORT")
+        self.host = env_host or host
+        try:
+            self.port = int(env_port) if env_port else port
+        except Exception:
+            self.port = port
         self.db_path = db_path
         self.app = web.Application()
         self._setup_routes()
@@ -70,6 +75,8 @@ class GUIServer:
         self.ws_clients = []
         self.feed_client = RealTimeWebSocketClient()
         self._feed_task = None
+        self.bridge_mode = os.environ.get("GUI_BRIDGE_MODE", "database").lower()
+        self.last_prices = {}
         # Metrics tracking
         self.metrics = {
             "trade_count": 0,
@@ -81,12 +88,13 @@ class GUIServer:
             "stop_ratchets": 0,
         }
         self.metrics_start_time = time.time()
-        # Initialize an orchestrator with demo/mock engines so the GUI is interactive
-        try:
-            self._init_demo_orchestrator()
-        except Exception:
-            # don't fail server startup if demo orchestrator cannot initialize
-            self.orchestrator = None
+        # Initialize an orchestrator with demo/mock engines only when requested
+        if self.bridge_mode in ("demo", "mock"):
+            try:
+                self._init_demo_orchestrator()
+            except Exception:
+                # don't fail server startup if demo orchestrator cannot initialize
+                self.orchestrator = None
 
     def _setup_routes(self):
         self.app.router.add_get("/", self.handle_index)
@@ -115,10 +123,21 @@ class GUIServer:
         secret_key = os.environ.get("GUI_SESSION_KEY")
         if not secret_key:
             # generate a 32-byte key and store in memory (not persistent)
-            secret_key = fernet.Fernet.generate_key()
+            secret_key_bytes = os.urandom(32)
         else:
-            secret_key = secret_key.encode()
-        session_setup(self.app, EncryptedCookieStorage(secret_key))
+            # Accept either base64-encoded 32-byte key or raw 32-byte string
+            try:
+                decoded = base64.urlsafe_b64decode(secret_key.encode())
+                if len(decoded) != 32:
+                    raise ValueError("Invalid decoded key length")
+                secret_key_bytes = decoded
+            except Exception:
+                raw = secret_key.encode()
+                if len(raw) != 32:
+                    # normalize by padding/truncation to 32 bytes
+                    raw = (raw + b"0" * 32)[:32]
+                secret_key_bytes = raw
+        session_setup(self.app, EncryptedCookieStorage(secret_key_bytes))
 
     async def _check_auth(self, request: web.Request) -> bool:
         # Prefer session-based auth. If no session, fall back to Basic auth if GUI_USER/PASS set.
@@ -240,7 +259,12 @@ class GUIServer:
         Returns 200 if the service is running (not crashed).
         This is a lightweight check; use /health for comprehensive status.
         """
-        return web.json_response({"status": "alive", "timestamp": int(time.time())})
+        payload = {"status": "alive", "timestamp": int(time.time())}
+        return web.Response(
+            text=json.dumps(payload, separators=(",", ":")),
+            status=200,
+            content_type="application/json",
+        )
 
     async def handle_readiness(self, request: web.Request):
         """Readiness probe for Kubernetes/container orchestration.
@@ -271,8 +295,11 @@ class GUIServer:
             checks["orchestrator"] = "not_initialized"
 
         status_code = 200 if ready else 503
-        return web.json_response(
-            {"ready": ready, "checks": checks, "timestamp": int(time.time())}, status=status_code
+        payload = {"ready": ready, "checks": checks, "timestamp": int(time.time())}
+        return web.Response(
+            text=json.dumps(payload, separators=(",", ":")),
+            status=status_code,
+            content_type="application/json",
         )
 
     async def handle_metrics(self, request: web.Request):
@@ -453,6 +480,7 @@ quant_trade_ws_clients {len(self.ws_clients)}
 
     async def handle_ws(self, request: web.Request):
         """WebSocket endpoint for real-time updates."""
+        ws = web.WebSocketResponse()
         await ws.prepare(request)
         self.ws_clients.append(ws)
 
@@ -488,23 +516,57 @@ quant_trade_ws_clients {len(self.ws_clients)}
 
         # Fallback: construct basic metrics from DB
         metrics = {
-            "total_capital": 0,
-            "available_capital": 0,
-            "deployed_capital": 0,
+            "total_capital": 0.0,
+            "available_capital": 0.0,
+            "deployed_capital": 0.0,
             "active_positions": 0,
             "closed_positions": 0,
-            "realized_pnl": 0,
-            "unrealized_pnl": 0,
-            "total_pnl": 0,
-            "total_return_pct": 0,
-            "concentration_pct": 0,
-            "win_rate_pct": 0,
+            "realized_pnl": 0.0,
+            "unrealized_pnl": 0.0,
+            "total_pnl": 0.0,
+            "total_return_pct": 0.0,
+            "concentration_pct": 0.0,
+            "win_rate_pct": 0.0,
         }
         try:
-            positions = self.persistence.list_positions()
-            metrics["active_positions"] = len(positions)
+            position_ids = self.persistence.list_positions()
+            deployed = Decimal("0")
+            active = 0
+            unrealized = Decimal("0")
+            for pid in position_ids:
+                pos = self.persistence.load_position(pid)
+                if not pos:
+                    continue
+                if pos.qty_filled > 0:
+                    active += 1
+                deployed += pos.entry_price * pos.qty_filled
+
+                product_id = pid.split("_")[0] if "_" in pid else pid
+                last_price = self.last_prices.get(product_id)
+                if last_price is not None and pos.qty_filled > 0:
+                    unrealized += (last_price - pos.entry_price) * pos.qty_filled
+
+            total_capital_env = os.environ.get("GUI_TOTAL_CAPITAL")
+            if total_capital_env:
+                total_capital = Decimal(str(total_capital_env))
+            else:
+                total_capital = deployed
+
+            total_pnl = unrealized
+            total_return = (
+                (total_pnl / total_capital * 100) if total_capital > 0 else Decimal("0")
+            )
+
+            metrics["total_capital"] = float(total_capital)
+            metrics["deployed_capital"] = float(deployed)
+            metrics["available_capital"] = float(total_capital - deployed)
+            metrics["active_positions"] = active
+            metrics["unrealized_pnl"] = float(unrealized)
+            metrics["total_pnl"] = float(total_pnl)
+            metrics["total_return_pct"] = float(total_return)
         except Exception:
             pass
+
         return {"metrics": metrics, "risk_violations": [], "rebalance_needed": False}
 
     async def handle_status(self, request: web.Request):
@@ -531,7 +593,35 @@ quant_trade_ws_clients {len(self.ws_clients)}
 
     async def handle_positions(self, request: web.Request):
         if not self.orchestrator:
-            return web.json_response({"positions": []})
+            out = []
+            try:
+                position_ids = self.persistence.list_positions()
+                for pid in position_ids:
+                    pos = self.persistence.load_position(pid)
+                    if not pos:
+                        continue
+                    product_id = pid.split("_")[0] if "_" in pid else pid
+                    status = "active" if pos.qty_filled > 0 else "closed"
+                    last_price = self.last_prices.get(product_id)
+                    if last_price is not None and pos.qty_filled > 0:
+                        current_pnl = (last_price - pos.entry_price) * pos.qty_filled
+                    else:
+                        current_pnl = Decimal("0")
+                    out.append(
+                        {
+                            "position_id": pid,
+                            "product_id": product_id,
+                            "entry_price": str(pos.entry_price),
+                            "qty": str(pos.qty_filled),
+                            "status": status,
+                            "current_pnl": str(current_pnl),
+                            "last_price": str(last_price) if last_price is not None else None,
+                        }
+                    )
+            except Exception:
+                pass
+            return web.json_response({"positions": out})
+
         pm = self.orchestrator.portfolio_manager
         out = []
         for pid, p in pm.positions.items():
@@ -613,6 +703,14 @@ quant_trade_ws_clients {len(self.ws_clients)}
             return web.json_response({"error": str(e)}, status=500)
 
     async def _feed_on_message(self, msg: dict):
+        product_id = msg.get("product_id")
+        price = msg.get("price")
+        if product_id and price:
+            try:
+                self.last_prices[product_id] = Decimal(str(price))
+            except Exception:
+                pass
+
         # Forward feed message to all connected browser clients
         out = {"type": "feed", "data": msg}
         for ws in list(self.ws_clients):
@@ -623,6 +721,23 @@ quant_trade_ws_clients {len(self.ws_clients)}
 
     async def start_feed(self, product_ids):
         await self.feed_client.start(product_ids, self._feed_on_message)
+
+    def _get_feed_products(self) -> list:
+        products_env = os.environ.get("GUI_FEED_PRODUCTS")
+        if products_env:
+            return [p.strip() for p in products_env.split(",") if p.strip()]
+
+        products = []
+        try:
+            position_ids = self.persistence.list_positions()
+            for pid in position_ids:
+                product_id = pid.split("_")[0] if "_" in pid else pid
+                if product_id and product_id not in products:
+                    products.append(product_id)
+        except Exception:
+            pass
+
+        return products or ["BTC-USD"]
 
     def register_orchestrator(self, orchestrator: MultiPairOrchestrator):
         self.orchestrator = orchestrator
@@ -680,6 +795,9 @@ quant_trade_ws_clients {len(self.ws_clients)}
         # start realtime feed for demo pairs if present
         try:
             pairs = getattr(self, "_demo_feed_pairs", None)
+            if self.bridge_mode == "live":
+                pairs = self._get_feed_products()
+
             if pairs:
                 self._feed_task = asyncio.create_task(self.start_feed(pairs))
             # run startup_reconcile for engines
